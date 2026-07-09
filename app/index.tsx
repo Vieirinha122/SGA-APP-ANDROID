@@ -1,5 +1,4 @@
-import * as ScreenOrientation from "expo-screen-orientation"; // <-- Faltava essa importação
-import React, { useEffect } from "react";
+import React from "react";
 import { StatusBar, Text, View } from "react-native";
 import useSettings from "../src/hooks/useSettings";
 import BrowserScreen from "../src/screens/BrowserScreen";
@@ -9,21 +8,9 @@ import { getPainelUrl } from "../src/utils/urls";
 export default function App() {
   const { settings, loading, save } = useSettings();
 
-  // Força a orientação da TV para Paisagem (Deitado) assim que o app abre
-  useEffect(() => {
-    async function lockLandscape() {
-      try {
-        await ScreenOrientation.lockAsync(
-          ScreenOrientation.OrientationLock.LANDSCAPE_RIGHT,
-        );
-      } catch (err) {
-        console.warn("Não foi possível travar a orientação:", err);
-      }
-    }
-    lockLandscape();
-  }, []);
-
-  if (loading) {
+  // 1. Enquanto carrega o AsyncStorage, trava na tela de splash
+  // Isso evita que o app tente injetar strings nulas ou indefinidas na WebView antes da hora
+  if (loading || !settings) {
     return (
       <View
         style={{
@@ -38,11 +25,12 @@ export default function App() {
     );
   }
 
-  // Validação direta do Token sem precisar de um useState intermediário redundante
+  // 2. Validação estrita e à prova de falhas do token
+  const token = settings?.painelToken;
   const temTokenValido =
-    settings?.painelToken && settings.painelToken.trim() !== "";
+    token && typeof token === "string" && token.trim() !== "";
 
-  // Se NÃO tem token salvo, renderiza direto a tela de configuração
+  // 3. Se NÃO tem token salvo ou veio string vazia, renderiza direto a tela de configuração
   if (!temTokenValido) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0b111e" }}>
@@ -51,8 +39,6 @@ export default function App() {
           settings={settings}
           onSave={async (partial) => {
             await save(partial);
-            // O próprio hook useSettings vai atualizar o estado,
-            // fazendo o componente re-renderizar direto para o Painel
           }}
           onBack={() => {}}
         />
@@ -60,8 +46,29 @@ export default function App() {
     );
   }
 
-  // Se JÁ TEM token, monta a URL do painel e abre a WebView direto
-  const urlPainel = getPainelUrl(settings.painelToken);
+  // 4. Monta a URL com proteção contra quebras de string
+  let urlPainel = "";
+  try {
+    urlPainel = getPainelUrl(token);
+  } catch (err) {
+    console.warn("Erro ao gerar URL do painel:", err);
+  }
+
+  // Se a URL der errada por qualquer motivo, exibe o aviso em vez de fechar o app
+  if (!urlPainel) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#0b111e",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <Text style={{ color: "#ff4444" }}>Erro interno: URL inválida.</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: "#0b111e" }}>
@@ -73,7 +80,7 @@ export default function App() {
         page="painel"
         onNavigate={() => {}}
         onOpenConfig={() => {
-          // Comando secreto dos 3 toques limpa o token e joga instantaneamente na tela de login
+          // Comando secreto dos 3 toques limpa o token e volta instantaneamente à configuração
           save({ painelToken: "" });
         }}
       />
