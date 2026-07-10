@@ -18,6 +18,11 @@ interface Props {
 export default function ConfigScreen({ settings, onSave, onBack }: Props) {
   const [painelToken, setPainelToken] = useState(settings.painelToken);
 
+  const hasExistingToken =
+    settings.painelToken &&
+    typeof settings.painelToken === "string" &&
+    settings.painelToken.trim() !== "";
+
   const handleSave = async () => {
     // Garante que o app saiba que a última página acessada foi o painel
     await onSave({
@@ -56,6 +61,15 @@ export default function ConfigScreen({ settings, onSave, onBack }: Props) {
         >
           <Text style={styles.btnText}>Conectar Painel</Text>
         </TouchableOpacity>
+
+        {hasExistingToken && (
+          <TouchableOpacity
+            style={[styles.button, styles.btnCancel]}
+            onPress={onBack}
+          >
+            <Text style={styles.btnCancelText}>Voltar ao Painel</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </ScrollView>
   );
@@ -119,6 +133,17 @@ const styles = StyleSheet.create({
   },
   btnText: {
     color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  btnCancel: {
+    backgroundColor: "transparent",
+    borderWidth: 1,
+    borderColor: "#4b5563",
+    marginLeft: 12,
+  },
+  btnCancelText: {
+    color: "#d1d5db",
     fontWeight: "600",
     fontSize: 16,
   },

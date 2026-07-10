@@ -7,6 +7,7 @@ import { getPainelUrl } from "../src/utils/urls";
 
 export default function App() {
   const { settings, loading, save } = useSettings();
+  const [isConfigOpen, setIsConfigOpen] = React.useState(false);
 
   // 1. Enquanto carrega o AsyncStorage, trava na tela de splash
   // Isso evita que o app tente injetar strings nulas ou indefinidas na WebView antes da hora
@@ -30,8 +31,8 @@ export default function App() {
   const temTokenValido =
     token && typeof token === "string" && token.trim() !== "";
 
-  // 3. Se NÃO tem token salvo ou veio string vazia, renderiza direto a tela de configuração
-  if (!temTokenValido) {
+  // 3. Se NÃO tem token salvo ou veio a tela de configuração aberta, renderiza a tela de configuração
+  if (!temTokenValido || isConfigOpen) {
     return (
       <View style={{ flex: 1, backgroundColor: "#0b111e" }}>
         <StatusBar hidden={true} />
@@ -40,7 +41,11 @@ export default function App() {
           onSave={async (partial) => {
             await save(partial);
           }}
-          onBack={() => {}}
+          onBack={() => {
+            if (temTokenValido) {
+              setIsConfigOpen(false);
+            }
+          }}
         />
       </View>
     );
@@ -80,8 +85,7 @@ export default function App() {
         page="painel"
         onNavigate={() => {}}
         onOpenConfig={() => {
-          // Comando secreto dos 3 toques limpa o token e volta instantaneamente à configuração
-          save({ painelToken: "" });
+          setIsConfigOpen(true);
         }}
       />
     </View>

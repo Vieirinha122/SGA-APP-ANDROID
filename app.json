@@ -3,7 +3,7 @@
     "name": "SGA-APP-ANDROID",
     "slug": "SGA-APP-ANDROID",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "landscape",
     "icon": "./assets/images/icon.png",
     "scheme": "sgaappandroid",
     "userInterfaceStyle": "automatic",
